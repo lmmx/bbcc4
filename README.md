@@ -180,3 +180,181 @@ shape: (105_494, 2)
 │ https://www.bbc.com/news/world… ┆ Rival protests over a murder i… │
 └─────────────────────────────────┴─────────────────────────────────┘
 ```
+
+## BBC News URLs
+
+> See `src/bbc_news_urls.py` for source
+
+Breaking down the URLs by the first path part after the domain (just "path"), there's a lot of
+non-news articles (the 2nd most common by frequency is `/blogs/` which didn't strike me as news
+so much as news-adjacent). I identified all of the regional paths and put them aside (included).
+
+This gives about 45 thousand BBC News items in C4, with no metadata on the year of publication.
+
+```py
+>>> aggregator
+shape: (44_588, 2)
+┌─────────────────────────────────┬─────────────────────────────────┐
+│ url                             ┆ text                            │
+│ ---                             ┆ ---                             │
+│ str                             ┆ str                             │
+╞═════════════════════════════════╪═════════════════════════════════╡
+│ http://www.bbc.co.uk/bristol/i… ┆ Take a look around the Nationa… │
+│ https://www.bbc.co.uk/news/ent… ┆ The Rolling Stones' US tour is… │
+│ https://www.bbc.co.uk/news/av/… ┆ Hands-on with a transparent 3D… │
+│ https://www.bbc.co.uk/news/av/… ┆ Meet The Author: Robyn Young J… │
+│ https://www.bbc.co.uk/news/sci… ┆ The "Pandora's box" of unmanne… │
+│ …                               ┆ …                               │
+│ https://www.bbc.com/news/av/wo… ┆ World Trade Center build at ha… │
+│ https://www.bbc.co.uk/news/uk-… ┆ Image caption William Alldis r… │
+│ https://www.bbc.com/news/techn… ┆ Mobile phones could soon be he… │
+│ https://www.bbc.co.uk/news/sci… ┆ The tail of a feathered dinosa… │
+│ https://www.bbc.com/news/world… ┆ Rival protests over a murder i… │
+└─────────────────────────────────┴─────────────────────────────────┘
+```
+
+It's proportionally about 99% `/news/` in the remainder with a long tail of regional content, which
+could be omitted for simplicity.
+
+```py
+>>> with pl.Config() as cfg:                                                                                                
+...     cfg.set_tbl_rows(-1)                                                                                                
+...     aggregator.with_columns(path_col)["path"].value_counts().sort("count", descending=True).with_row_index().pipe(print)                                                                                   
+... 
+<class 'polars.config.Config'>
+shape: (48, 3)
+┌───────┬────────────────────────┬───────┐
+│ index ┆ path                   ┆ count │
+│ ---   ┆ ---                    ┆ ---   │
+│ u32   ┆ str                    ┆ u32   │
+╞═══════╪════════════════════════╪═══════╡
+│ 0     ┆ /news/                 ┆ 43965 │
+│ 1     ┆ /wales/                ┆ 153   │
+│ 2     ┆ /scotland/             ┆ 49    │
+│ 3     ┆ /northernireland/      ┆ 40    │
+│ 4     ┆ /cornwall/             ┆ 30    │
+│ 5     ┆ /southyorkshire/       ┆ 19    │
+│ 6     ┆ /cumbria/              ┆ 18    │
+│ 7     ┆ /bristol/              ┆ 17    │
+│ 8     ┆ /suffolk/              ┆ 16    │
+│ 9     ┆ /stoke/                ┆ 16    │
+│ 10    ┆ /shropshire/           ┆ 15    │
+│ 11    ┆ /gloucestershire/      ┆ 15    │
+│ 12    ┆ /wiltshire/            ┆ 15    │
+│ 13    ┆ /leicester/            ┆ 14    │
+│ 14    ┆ /nottingham/           ┆ 14    │
+│ 15    ┆ /leeds/                ┆ 13    │
+│ 16    ┆ /devon/                ┆ 12    │
+│ 17    ┆ /birmingham/           ┆ 11    │
+│ 18    ┆ /bradford/             ┆ 11    │
+│ 19    ┆ /norfolk/              ┆ 10    │
+│ 20    ┆ /manchester/           ┆ 9     │
+│ 21    ┆ /london/               ┆ 9     │
+│ 22    ┆ /coventry/             ┆ 9     │
+│ 23    ┆ /liverpool/            ┆ 8     │
+│ 24    ┆ /jersey/               ┆ 8     │
+│ 25    ┆ /cambridgeshire/       ┆ 8     │
+│ 26    ┆ /readingandleeds/      ┆ 7     │
+│ 27    ┆ /dorset/               ┆ 7     │
+│ 28    ┆ /england/              ┆ 7     │
+│ 29    ┆ /herefordandworcester/ ┆ 6     │
+│ 30    ┆ /hampshire/            ┆ 6     │
+│ 31    ┆ /berkshire/            ┆ 5     │
+│ 32    ┆ /northamptonshire/     ┆ 5     │
+│ 33    ┆ /tyne/                 ┆ 5     │
+│ 34    ┆ /kent/                 ┆ 4     │
+│ 35    ┆ /derby/                ┆ 4     │
+│ 36    ┆ /essex/                ┆ 3     │
+│ 37    ┆ /chelsea/              ┆ 3     │
+│ 38    ┆ /lancashire/           ┆ 3     │
+│ 39    ┆ /somerset/             ┆ 3     │
+│ 40    ┆ /tees/                 ┆ 3     │
+│ 41    ┆ /lincolnshire/         ┆ 3     │
+│ 42    ┆ /blackcountry/         ┆ 3     │
+│ 43    ┆ /humber/               ┆ 2     │
+│ 44    ┆ /oxford/               ┆ 2     │
+│ 45    ┆ /isleofman/            ┆ 1     │
+│ 46    ┆ /southampton/          ┆ 1     │
+│ 47    ┆ /guernsey/             ┆ 1     │
+└───────┴────────────────────────┴───────┘
+```
+
+## BBC News drill down
+
+> See `src/bbc_news_main_subpath_only.py`
+
+To just look at the URLs of the subset identified under `/news/` in the last section
+
+A quick way to get a look inside the remainder is to see how many subpaths deep they go:
+
+```py
+# First extract everything before any query parameters
+patterns = aggregator.select(
+    pl.col("url").str.extract(r"https?://[^/]+/news/([^?]+)").alias("path_structure")
+).with_columns([
+    pl.col("path_structure").str.count_matches("/").alias("slash_count"),
+])
+```
+
+When we look at these, there are still evidently oddities that aren't news articles:
+
+> This result for example is some sort of fragment from a school leaderboard.
+
+```py
+>>> patterns["slash_count"].max()                                                                                                                                                                                   
+6
+>>> patterns.filter(pl.col("slash_count") == 6)[0].to_dicts()
+[{'path_structure': 'special/education/school_tables/primary/10/html/868.stm', 'slash_count': 6, 'is_numeric': False, 'is_world': False, 'is_uk': False, 'is_av': False}]
+>>> pprint(aggregator.filter(pl.col("url").str.contains("special/education/school_tables/primary/10/html/868.stm")).to_dicts())
+[{'text': '% achieving L4 maths and Eng What does this mean?\n'
+          'Average point score What does this mean?\n'
+          'Contextual value added What does this mean?',
+  'url': 'http://www.bbc.co.uk/news/special/education/school_tables/primary/10/html/868.stm'}]
+```
+
+It's easier to interpret the path structure here as "levels" (non-leaf path parts), and counting
+them/taking unique values with examples:
+
+<details><summary>Click to show:</summary>
+
+```py
+pl.Config.set_tbl_rows(-1)
+pl.Config.set_tbl_width(-1)
+pl.Config(fmt_str_lengths=1000)
+
+level_patterns = (patterns
+   .group_by(["level1", "level2", "rest"])
+   .agg([
+       pl.len().alias("count"),
+       pl.first("example_url").alias("example")
+   ])
+   .with_columns([
+       pl.concat_str([
+           pl.coalesce(pl.col("level1"), pl.lit("")),
+           pl.coalesce(pl.col("level2"), pl.lit("")),
+           pl.coalesce(pl.col("rest"), pl.lit(""))
+       ], separator="/").alias("path_order"),
+       # Count the number of non-null path components
+       (pl.col("level1").is_not_null().cast(pl.Int32) + 
+        pl.col("level2").is_not_null().cast(pl.Int32) + 
+        pl.col("rest").is_not_null().cast(pl.Int32)).alias("path_depth")
+   ])
+   .sort("path_order")
+)
+```
+
+</details>
+
+This gives a very large number of patterns to begin working away at (a pager would help here, like
+`str(list()) around `pydoc.pager``).
+
+```py
+from pydoc import pager
+from pprint import pformat, pprint
+
+def listpager(l):
+    pager("\n".join([i if type(i) is str else repr(i) for i in l]))
+```
+
+...so as to whittle away the non-useful subsets - ideally there would be only a handful of formats
+for standalone articles' URLs!
