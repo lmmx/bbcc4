@@ -1,8 +1,17 @@
 from pprint import pprint
+import tempfile
 
+from pathlib import Path
 import polars as pl
 from huggingface_hub import hf_hub_url, list_repo_files
 from tqdm import tqdm
+import base64
+
+def cache_name(url: str) -> str:
+    return base64.urlsafe_b64encode(url.encode()).decode().rstrip("=") + ".parquet"
+
+cache_path = Path(tempfile.gettempdir()) / "allenai_c4"
+cache_path.mkdir(exist_ok=True)
 
 file_names = pl.Series(list_repo_files("allenai/c4", repo_type="dataset"))
 # Take all splits of the realnewslike subset (513 files)
@@ -27,15 +36,20 @@ for filename in tqdm(news_files):
         repo_type="dataset",
     )
     print(f"Processing {json_url}")
-    df = (
-        pl.read_ndjson(json_url, schema=c4n_features)
-        .with_columns(pl.col("url").str.extract(r"([^?]+)"))
-        .filter(
-            pl.col("url").str.extract(domain_capture).str.contains(url_match),
-            ~pl.col("url").str.contains(r"https?://[^/]+\/\?"),  # Path is a ?
+    parquet_cache_chunk = cache_path / cache_name(json_url)
+    if parquet_cache_chunk.exists():
+        news_df = pl.read_parquet(parquet_cache_chunk)
+    else:
+        df = (
+            pl.read_ndjson(json_url, schema=c4n_features)
+            .with_columns(pl.col("url").str.extract(r"([^?]+)"))
+            .filter(
+                pl.col("url").str.extract(domain_capture).str.contains(url_match),
+                ~pl.col("url").str.contains(r"https?://[^/]+\/\?"),  # Path is a ?
+            )
         )
-    )
-    # Just match the "/news/" path here
-    news_df = df.filter(path_col == "/news/")
+        # Just match the "/news/" path here
+        news_df = df.filter(path_col == "/news/")
+        news_df.write_parquet(parquet_cache_chunk)
     aggregator = pl.concat([aggregator, news_df])
     print(aggregator)
