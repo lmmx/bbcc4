@@ -358,3 +358,35 @@ def listpager(l):
 
 ...so as to whittle away the non-useful subsets - ideally there would be only a handful of formats
 for standalone articles' URLs!
+
+Note that the `news.bbc.co.uk` domain has to be handled differently:
+
+```py
+>>> pprint(aggregator.filter(pl.col("url").str.contains('news.bbc.co')).select(path_col).unique('url').sort('url').to_dicts())
+[{'url': '/1/'},
+ {'url': '/2/'},
+ {'url': '/aboutbbcnews/'},
+ {'url': '/cbbcnews/'},
+ {'url': '/chinese/'},
+ {'url': '/democracylive/'},
+ {'url': '/dna/'},
+ {'url': '/earth/'},
+ {'url': '/hi/'},
+ {'url': '/local/'},
+ {'url': '/mobile/'},
+ {'url': '/news/'},
+ {'url': '/newsbeat/'},
+ {'url': '/newswatch/'},
+ {'url': '/nol/'},
+ {'url': '/nolavconsole/'},
+ {'url': '/onthisday/'},
+ {'url': '/panorama/'},
+ {'url': '/player/'},
+ {'url': '/shared/'},
+ {'url': '/sport1/'},
+ {'url': '/sport2/'},
+ {'url': '/sport3/'},
+ {'url': '/sportacademy/'},
+ {'url': '/today/'},
+ {'url': '/winterolympics2002/'}]
+```
